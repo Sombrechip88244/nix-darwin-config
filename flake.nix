@@ -61,5 +61,4 @@
     };
   };
 # Default Terminal 
-environment.variables.TERMINAL = "alacritty";
 }
