@@ -35,7 +35,7 @@ home.sessionVariables = {
 };
 
 programs.zsh = {
-  enable = true;
+  enable = false;
   
   # Source your existing .zshrc
   initExtra = ''
