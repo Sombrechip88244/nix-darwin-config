@@ -34,8 +34,8 @@ home.sessionVariables = {
   EDITOR = "nvim"; # or whatever editor you prefer
 };
 
-programs.zsh = {
-  enable = false;
+# programs.zsh = {
+#  enable = false;
   
   # Source your existing .zshrc
   initExtra = ''
