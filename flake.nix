@@ -5,19 +5,21 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-25.05-darwin";
     nix-darwin.url = "github:nix-darwin/nix-darwin/nix-darwin-25.05";
     nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
+    home-manager.url = "github:nix-community/home-manager";
+    home-manager.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = inputs@{ self, nix-darwin, nixpkgs }:
+  outputs = inputs@{ self, nix-darwin, nixpkgs, home-manager }:
   let
     configuration = { pkgs, ... }: {
       # List packages installed in system profile. To search by name, run:
       # $ nix-env -qaP | grep wget
-      environment.systemPackages =
-        [ pkgs.vim
-	pkgs.alacritty
-	pkgs.neovim
-	pkgs.tmux
-        ];
+      environment.systemPackages = [
+        pkgs.vim
+        pkgs.alacritty
+        pkgs.neovim
+        pkgs.tmux
+      ];
 
       # Necessary for using flakes on this system.
       nix.settings.experimental-features = "nix-command flakes";
@@ -34,13 +36,30 @@
 
       # The platform the configuration will be used on.
       nixpkgs.hostPlatform = "aarch64-darwin";
+
+      # Configure users
+      users.users.oliverfildes = {
+        name = "oliverfildes";
+        home = "/Users/oliverfildes";
+      };
+
+      # Enable Home Manager
+      home-manager.backupFileExtension = "backup";
+      home-manager.useGlobalPkgs = true;
+      home-manager.useUserPackages = true;
+      home-manager.users.oliverfildes = import ./home.nix;
     };
   in
   {
     # Build darwin flake using:
     # $ darwin-rebuild build --flake .#Olivers-MacBook-Air
     darwinConfigurations."Olivers-MacBook-Air" = nix-darwin.lib.darwinSystem {
-      modules = [ configuration ];
+      modules = [ 
+        configuration 
+        home-manager.darwinModules.home-manager
+      ];
     };
   };
+# Default Terminal 
+environment.variables.TERMINAL = "alacritty";
 }

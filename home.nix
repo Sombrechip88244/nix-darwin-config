@@ -35,4 +35,21 @@
 
   # Let Home Manager install and manage itself
   programs.home-manager.enable = true;
+
+# Defualts
+home.sessionVariables = {
+  TERMINAL = "alacritty";
+  EDITOR = "nvim"; # or whatever editor you prefer
+};
+
+programs.zsh = {
+  enable = true;
+  
+  # Source your existing .zshrc
+  initExtra = ''
+    if [ -f ~/.zshrc ]; then
+      source ~/.zshrc
+    fi
+  '';
+};
 }
