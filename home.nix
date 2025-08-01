@@ -25,14 +25,6 @@
     userEmail = "Oliver.fildes@proton.me";
   };
 
-  programs.zsh = {
-    enable = true;
-    shellAliases = {
-      ll = "ls -l";
-      la = "ls -la";
-    };
-  };
-
   # Let Home Manager install and manage itself
   programs.home-manager.enable = true;
 
