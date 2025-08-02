@@ -4,8 +4,9 @@
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-25.05-darwin";
     nix-darwin.url = "github:nix-darwin/nix-darwin/nix-darwin-25.05";
     nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
+    nix-homebrew.url = "github:zhaofengli-wip/nix-homebrew";
   };
-  outputs = inputs@{ self, nix-darwin, nixpkgs }:
+  outputs = inputs@{ self, nix-darwin, nixpkgs, nix-homebrew }:
   let
     configuration = { pkgs, ... }: {
   # Set the primary user
@@ -17,6 +18,30 @@
         pkgs.neovim
         pkgs.tmux
       ];
+
+      # Homebrew configuration
+      homebrew = {
+        enable = true;
+        brews = [
+          # Add your desired brew packages here
+          # "wget"
+          # "curl"
+        ];
+        casks = [
+          # Add your desired cask applications here
+          "firefox"
+          "font-0xproto"
+	  "visual-studio-code"
+
+        ];
+        masApps = {
+          # Add Mac App Store apps here (you'll need their App Store IDs)
+          # "Xcode" = 497799835;
+        };
+        onActivation.cleanup = "zap";
+        onActivation.autoUpdate = true;
+        onActivation.upgrade = true;
+      };
 
       # System Defaults Configuration
       system.defaults = {
@@ -119,7 +144,19 @@
   in
   {
     darwinConfigurations."Olivers-MacBook-Air" = nix-darwin.lib.darwinSystem {
-      modules = [ configuration ];
+      modules = [ 
+        configuration
+        nix-homebrew.darwinModules.nix-homebrew
+        {
+          nix-homebrew = {
+            enable = true;
+            # Apple Silicon Only: Also install Homebrew under the default Intel prefix for Rosetta 2
+            enableRosetta = true;
+            # User owning the Homebrew prefix
+            user = "oliverfildes";
+          };
+        }
+      ];
     };
   };
 }
