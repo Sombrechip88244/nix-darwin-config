@@ -1,6 +1,6 @@
-# Nix Darwin + Home Manager Setup Guide
+# Nix Darwin Setup Guide
 
-A comprehensive guide to setting up a declarative macOS configuration using nix-darwin and Home Manager.
+A comprehensive guide to setting up a declarative macOS configuration using nix-darwin.
 
 ## Table of Contents
 
@@ -8,9 +8,7 @@ A comprehensive guide to setting up a declarative macOS configuration using nix-
 - [Step 1: Install Nix](#step-1-install-nix)
 - [Step 2: Install nix-darwin](#step-2-install-nix-darwin)
 - [Step 3: Create Initial Configuration](#step-3-create-initial-configuration)
-- [Step 4: Add Home Manager](#step-4-add-home-manager)
-- [Step 5: Configure Home Manager](#step-5-configure-home-manager)
-- [Step 6: Version Control](#step-6-version-control)
+- [Step 4: Version Control](#step-4-version-control)
 - [Usage](#usage)
 - [Common Configurations](#common-configurations)
 - [Troubleshooting](#troubleshooting)
@@ -62,22 +60,18 @@ $(nix-build https://github.com/LnL7/nix-darwin/archive/master.tar.gz -A installe
 source /etc/static/bashrc
 ```
 
-## Step 3: Create Initial Configuration
+## Step 3: Clone Configuration Repository
 
-### Create a configuration directory:
+### Clone the nix-darwin configuration repository:
 
 ```bash
-mkdir -p ~/.config/nix-darwin
+git clone YOUR_REPO_URL ~/.config/nix-darwin
 cd ~/.config/nix-darwin
 ```
 
-### Initialize as a git repository:
+> **Important**: Replace `YOUR_REPO_URL` with the actual URL of your nix-darwin configuration repository.
 
-```bash
-git init
-```
-
-### Create a flake.nix file:
+### Your flake.nix should look like this:
 
 ```nix
 {
@@ -87,11 +81,9 @@ git init
     nixpkgs.url = "github:NixOS/nixpkgs/nixpkgs-unstable";
     nix-darwin.url = "github:LnL7/nix-darwin";
     nix-darwin.inputs.nixpkgs.follows = "nixpkgs";
-    home-manager.url = "github:nix-community/home-manager";
-    home-manager.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = inputs@{ self, nix-darwin, nixpkgs, home-manager }:
+  outputs = inputs@{ self, nix-darwin, nixpkgs }:
   let
     configuration = { pkgs, ... }: {
       # List packages installed in system profile
@@ -100,6 +92,14 @@ git init
         git
         curl
         wget
+        htop
+        tree
+        ripgrep
+        fd
+        bat
+        exa
+        fzf
+        jq
       ];
 
       # Enable nix flakes
@@ -126,19 +126,82 @@ git init
         home = "/Users/YOUR_USERNAME";
       };
       
-      # Enable Home Manager
-      home-manager.backupFileExtension = "backup";
-      home-manager.useGlobalPkgs = true;
-      home-manager.useUserPackages = true;
-      home-manager.users.YOUR_USERNAME = import ./home.nix;
+      # macOS system settings
+      system.defaults = {
+        # Dock settings
+        dock = {
+          autohide = true;
+          orientation = "bottom";
+          showhidden = true;
+          mineffect = "genie";
+          launchanim = true;
+          show-process-indicators = true;
+          tilesize = 48;
+          static-only = true;
+          mru-spaces = false;
+        };
+
+        # Finder settings
+        finder = {
+          AppleShowAllExtensions = true;
+          AppleShowAllFiles = true;
+          CreateDesktop = false;
+          FXDefaultSearchScope = "SCcf"; # Search current folder
+          FXEnableExtensionChangeWarning = false;
+          FXPreferredViewStyle = "Nlsv"; # List view
+          ShowPathbar = true;
+          ShowStatusBar = true;
+        };
+
+        # Trackpad settings
+        trackpad = {
+          Clicking = true; # Tap to click
+          TrackpadRightClick = true;
+          TrackpadThreeFingerDrag = true;
+        };
+
+        # NSGlobalDomain settings (affects all apps)
+        NSGlobalDomain = {
+          AppleInterfaceStyle = "Dark"; # Dark mode
+          AppleKeyboardUIMode = 3; # Full keyboard access
+          ApplePressAndHoldEnabled = false; # Disable press-and-hold for accent characters
+          AppleShowAllExtensions = true;
+          AppleShowScrollBars = "Always";
+          InitialKeyRepeat = 14; # Faster key repeat
+          KeyRepeat = 1; # Faster key repeat
+          NSAutomaticCapitalizationEnabled = false;
+          NSAutomaticDashSubstitutionEnabled = false;
+          NSAutomaticPeriodSubstitutionEnabled = false;
+          NSAutomaticQuoteSubstitutionEnabled = false;
+          NSAutomaticSpellingCorrectionEnabled = false;
+          NSNavPanelExpandedStateForSaveMode = true;
+          NSNavPanelExpandedStateForSaveMode2 = true;
+          _HIHideMenuBar = false;
+        };
+
+        # Login window settings
+        loginwindow = {
+          GuestEnabled = false;
+          SHOWFULLNAME = false;
+        };
+
+        # Screenshots
+        screencapture = {
+          location = "~/Desktop/Screenshots";
+          type = "png";
+        };
+      };
+
+      # Keyboard settings
+      system.keyboard = {
+        enableKeyMapping = true;
+        remapCapsLockToEscape = true;
+      };
     };
   in
   {
     darwinConfigurations."YOUR_HOSTNAME" = nix-darwin.lib.darwinSystem {
-      modules = [
-        configuration
-        home-manager.darwinModules.home-manager
-      ];
+      modules = [ configuration ];
     };
   };
 }
@@ -149,191 +212,177 @@ git init
 Find your username: `whoami`  
 Find your hostname: `hostname` or `scutil --get ComputerName`
 
-## Step 4: Add Home Manager
+## Step 4: Customize Configuration
 
-Home Manager is already included in the flake above. Now create the Home Manager configuration.
+### Update the configuration for your system:
 
-### Create home.nix:
+1. **Edit the flake.nix file** to match your username and hostname:
+   ```bash
+   vim flake.nix
+   ```
 
-```nix
-{ config, pkgs, ... }:
+2. **Replace placeholders** in the configuration:
+   - Replace `YOUR_USERNAME` with your actual username (`whoami`)
+   - Replace `YOUR_HOSTNAME` with your computer's hostname (`hostname` or `scutil --get ComputerName`)
+   - Update `nixpkgs.hostPlatform` to match your system:
+     - `"aarch64-darwin"` for Apple Silicon Macs
+     - `"x86_64-darwin"` for Intel Macs
 
-{
-  # Home Manager needs a bit of information about you and the paths it should manage
-  home.username = "YOUR_USERNAME"; # Replace with your username
-  home.homeDirectory = "/Users/YOUR_USERNAME"; # Replace with your username
-
-  # This value determines the Home Manager release that your configuration is compatible with
-  home.stateVersion = "24.05";
-
-  # Install packages with Home Manager
-  home.packages = with pkgs; [
-    # Terminal utilities
-    htop
-    tree
-    ripgrep
-    fd
-    bat
-    exa
-    fzf
-    jq
-    
-    # Development tools
-    nodejs
-    python3
-    
-    # Add any other packages you want
-  ];
-
-  # Configure programs
-  programs.git = {
-    enable = true;
-    userName = "Your Name";
-    userEmail = "your.email@example.com";
-    extraConfig = {
-      init.defaultBranch = "main";
-      push.default = "simple";
-    };
-  };
-
-  programs.zsh = {
-    enable = true;
-    enableCompletion = true;
-    autosuggestion.enable = true;
-    syntaxHighlighting.enable = true;
-    
-    shellAliases = {
-      ll = "ls -l";
-      la = "ls -la";
-      grep = "rg";
-      cat = "bat";
-      ls = "exa";
-    };
-  };
-
-  # Set environment variables
-  home.sessionVariables = {
-    EDITOR = "vim";
-    BROWSER = "firefox";
-  };
-
-  # Let Home Manager install and manage itself
-  programs.home-manager.enable = true;
-}
-```
-
-## Step 5: Configure Home Manager
-
-You can disable the version mismatch warning by adding this to your `home.nix`:
-
-```nix
-home.enableNixpkgsReleaseCheck = false;
-```
-
-## Step 6: Version Control
-
-### Add files to git:
-
-```bash
-git add flake.nix home.nix
-git commit -m "Initial nix-darwin + home-manager configuration"
-```
-
-### Create a .gitignore:
-
-```bash
-echo "result" > .gitignore
-echo ".DS_Store" >> .gitignore
-git add .gitignore
-git commit -m "Add .gitignore"
-```
+3. **Commit your changes**:
+   ```bash
+   git add .
+   git commit -m "Customize configuration for this machine"
+   ```
 
 ## Usage
 
-### Build and apply configuration:
+### Initial setup - build and apply configuration:
 
 ```bash
 sudo darwin-rebuild switch --flake .#YOUR_HOSTNAME
 ```
 
-### Update flake inputs:
+### After making changes to the configuration:
+
+```bash
+git add .
+git commit -m "Description of changes"
+sudo darwin-rebuild switch --flake .#YOUR_HOSTNAME
+```
+
+### Update flake inputs to get latest packages:
 
 ```bash
 nix flake update
+git add flake.lock
+git commit -m "Update flake inputs"
 sudo darwin-rebuild switch --flake .#YOUR_HOSTNAME
 ```
 
-### Just rebuild Home Manager:
+### Push changes back to your repository:
 
 ```bash
-home-manager switch --flake .#YOUR_HOSTNAME
+git push origin main
+```
+
+### Just check what would be built without applying:
+
+```bash
+sudo darwin-rebuild build --flake .#YOUR_HOSTNAME
 ```
 
 ## Common Configurations
 
-### Shell Configuration (Zsh with Oh My Zsh):
+### Adding Development Tools:
+
+```nix
+environment.systemPackages = with pkgs; [
+  # Basic tools
+  vim
+  git
+  curl
+  wget
+  
+  # Development
+  nodejs
+  python3
+  go
+  rustc
+  cargo
+  
+  # Terminal utilities
+  htop
+  tree
+  ripgreg
+  fd
+  bat
+  fzf
+  tmux
+  
+  # Editor
+  neovim
+  vscode
+];
+```
+
+### Shell Configuration:
 
 ```nix
 programs.zsh = {
   enable = true;
   enableCompletion = true;
-  autosuggestion.enable = true;
-  syntaxHighlighting.enable = true;
+  enableBashCompletion = true;
   
-  oh-my-zsh = {
-    enable = true;
-    plugins = [ "git" "sudo" "docker" "kubectl" ];
-    theme = "robbyrussell";
-  };
-  
-  shellAliases = {
-    ll = "ls -l";
-    la = "ls -la";
-    ".." = "cd ..";
-    "..." = "cd ../..";
+  # Add custom shell init
+  shellInit = ''
+    # Custom shell configuration
+    export EDITOR=vim
+    export BROWSER=firefox
+    
+    # Aliases
+    alias ll='ls -l'
+    alias la='ls -la'
+    alias grep='rg'
+    alias cat='bat'
+  '';
+};
+```
+
+### Git Configuration:
+
+```nix
+programs.git = {
+  enable = true;
+  config = {
+    init.defaultBranch = "main";
+    user.name = "Your Name";
+    user.email = "your.email@example.com";
+    push.default = "simple";
+    pull.rebase = true;
   };
 };
 ```
 
-### Development Environment:
+### Additional macOS Settings:
 
 ```nix
-programs.direnv = {
-  enable = true;
-  enableZshIntegration = true;
-  nix-direnv.enable = true;
-};
-
-programs.neovim = {
-  enable = true;
-  defaultEditor = true;
-  viAlias = true;
-  vimAlias = true;
-};
-
-programs.tmux = {
-  enable = true;
-  shortcut = "a";
-  baseIndex = 1;
-  newSession = true;
-  escapeTime = 0;
-};
-```
-
-### macOS System Settings:
-
-Add to your main configuration in `flake.nix`:
-
-```nix
-# macOS system settings
 system.defaults = {
-  dock.autohide = true;
-  dock.mru-spaces = false;
-  finder.AppleShowAllExtensions = true;
-  finder.FXPreferredViewStyle = "clmv";
-  loginwindow.LoginwindowText = "Welcome to my Mac";
-  screencapture.location = "~/Pictures/Screenshots";
-  screensaver.askForPasswordDelay = 10;
+  # More dock settings
+  dock = {
+    autohide = true;
+    mru-spaces = false;
+    minimize-to-application = true;
+    persistent-apps = [
+      "/Applications/Firefox.app"
+      "/Applications/Alacritty.app"
+    ];
+  };
+  
+  # Menu bar
+  menuExtraClock = {
+    Show24Hour = true;
+    ShowAMPM = false;
+    ShowDate = 1;
+    ShowDayOfWeek = true;
+    ShowSeconds = false;
+  };
+  
+  # More finder settings
+  finder = {
+    AppleShowAllExtensions = true;
+    AppleShowAllFiles = true;
+    CreateDesktop = false;
+    FXPreferredViewStyle = "clmv"; # Column view
+    ShowPathbar = true;
+    ShowStatusBar = true;
+  };
+  
+  # Security
+  loginwindow = {
+    GuestEnabled = false;
+    SHOWFULLNAME = false;
+    LoginwindowText = "Welcome to my Mac";
+  };
 };
 ```
 
@@ -347,14 +396,14 @@ system.defaults = {
    git commit -m "Add missing files"
    ```
 
-2. **Version mismatch warnings**: Add `home.enableNixpkgsReleaseCheck = false;` to `home.nix`
+2. **Permission denied**: Make sure you're using `sudo` for `darwin-rebuild`
 
-3. **Permission denied**: Make sure you're using `sudo` for `darwin-rebuild`
-
-4. **Syntax errors**: Validate your nix files:
+3. **Syntax errors**: Validate your nix files:
    ```bash
    nix flake check
    ```
+
+4. **Build failures**: Check the build output and ensure all package names are correct
 
 ### Useful Commands:
 
@@ -370,38 +419,22 @@ darwin-rebuild --list-generations
 
 # Rollback to previous generation
 sudo darwin-rebuild rollback
+
+# Search for packages
+nix search nixpkgs package_name
+
+# Show package information
+nix show-derivation nixpkgs#package_name
 ```
 
-## File Structure
+### Debugging Configuration:
 
-Your final directory structure should look like:
+```bash
+# Dry run to see what would change
+sudo darwin-rebuild build --flake .#YOUR_HOSTNAME
 
-```
-~/.config/nix-darwin/
-├── flake.nix          # Main system configuration
-├── home.nix           # Home Manager configuration
-├── flake.lock         # Lock file (auto-generated)
-├── .gitignore         # Git ignore file
-└── README.md          # This documentation
-```
+# Verbose output
+sudo darwin-rebuild switch --flake .#YOUR_HOSTNAME --show-trace
 
-## Benefits
-
-- **Declarative**: Your entire system configuration is defined in code
-- **Reproducible**: Easy to recreate the same environment on different machines
-- **Version Controlled**: Track changes and roll back if needed
-- **Modular**: Separate system and user configurations
-- **Cross-Platform**: Same configuration syntax as NixOS
-
-## Next Steps
-
-1. Customize the configurations to match your preferences
-2. Add more programs and packages as needed
-3. Explore the extensive Home Manager options
-4. Consider creating modules for complex configurations
-5. Set up automatic updates or deployment workflows
-
-For more advanced configurations, check out:
-- [Home Manager Options](https://nix-community.github.io/home-manager/options.html)
-- [nix-darwin Options](https://daiderd.com/nix-darwin/manual/index.html)
-- [Nix Language Guide](https://nixos.org/guides/nix-language.html)
+# Check system configuration
+darwin
