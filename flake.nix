@@ -17,6 +17,7 @@
         pkgs.alacritty
         pkgs.neovim
         pkgs.tmux
+	pkgs.neofetch
       ];
 
       # Homebrew configuration
@@ -30,9 +31,9 @@
         casks = [
           # Add your desired cask applications here
           "firefox"
-          "font-0xproto"
+          "font-0xproto-nerd-font"
 	  "visual-studio-code"
-
+	  "spotify"
         ];
         masApps = {
           # Add Mac App Store apps here (you'll need their App Store IDs)
