@@ -152,6 +152,7 @@
         brews = [
 	"docker-compose"
 	"emacs"
+	"coreutils"
 	
 	];
         casks = [
